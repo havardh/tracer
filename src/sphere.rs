@@ -1,4 +1,5 @@
 use vec::Vec3;
+use ray::Ray;
 
 #[derive(Debug)]
 pub struct Sphere {
@@ -13,14 +14,14 @@ impl Sphere {
         }
     }
 
-    pub fn intersect(&self, ray: &Vec3) -> bool {
+    pub fn intersect(&self, ray: &Ray) -> Option<Vec3> {
 
-        let o = Vec3::new(0.0, 0.0, 0.0);
-        let l = ray;
+        let o = ray.origin;
+        let l = ray.direction;
         let c = &self.origin;
         let r = self.r;
 
-        let o_c = o.minus(&c);
+        let o_c = o.sub(&c);
 
         let l_dot_oc = l.dot(&o_c);
 
@@ -28,18 +29,23 @@ impl Sphere {
         let b = (l_dot_oc * l_dot_oc) - o_c.dot(&o_c) + (r*r);
 
         if b < 0.0 {
-            false
+            None
         } else {
             let d = a - b.sqrt();
 
             let p = o.add(&l.multiply(d));
 
-            if (o.minus(&p)).length().abs() > 0.001 {
-                true
+            if (o.sub(&p)).length().abs() > 0.001 {
+                Some(p)
             } else {
-                false
+                None
             }
         }
+    }
 
+    pub fn norm(&self, point: &Vec3) -> Vec3 {
+        let mut direction = point.sub(&self.origin);
+        direction.norm();
+        direction
     }
 }

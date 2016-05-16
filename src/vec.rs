@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[derive(Clone, Copy)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -21,7 +22,7 @@ impl Vec3 {
         Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 
-    pub fn minus(&self, other: &Vec3) -> Vec3 {
+    pub fn sub(&self, other: &Vec3) -> Vec3 {
         Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 
@@ -31,6 +32,14 @@ impl Vec3 {
 
     pub fn multiply(&self, f: f32) -> Vec3 {
         Vec3::new(self.x * f, self.y * f, self.z * f)
+    }
+
+    pub fn cross(&self, o: &Vec3) -> Vec3 {
+        Vec3::new(
+            self.y * o.z - self.z * o.y,
+            -(self.x * o.z - self.z * o.x),
+            self.x * o.y - self.y * o.x
+        )
     }
 
     pub fn norm(&mut self) {
