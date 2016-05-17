@@ -1,16 +1,20 @@
 use vec::Vec3;
 use ray::Ray;
+use bmp::Pixel;
 
 #[derive(Debug)]
 pub struct Sphere {
+    pub color: Pixel,
     pub origin: Vec3,
     pub r: f32,
 }
 
 impl Sphere {
-    pub fn new(origin: Vec3, r: f32) -> Sphere {
+    pub fn new(origin: Vec3, r: f32, color: Pixel) -> Sphere {
         Sphere {
-            origin: origin, r: r
+            origin: origin,
+            r: r,
+            color: color
         }
     }
 

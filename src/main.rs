@@ -15,10 +15,17 @@ pub mod sphere;
 pub mod vec;
 
 fn main() {
-    let shapes = vec!(
-        Sphere::new(Vec3::new(20.0, 0.0, 20.0), 4.0),
-        Sphere::new(Vec3::new(0.0, 0.0, 20.0), 4.0)
+
+    let lights = vec!(
+        Vec3::new(3.0, -3.0, 5.0),
+        Vec3::new(-3.0, -3.0, 1.0)
     );
+
+    let shapes = vec!(Sphere::new(
+        Vec3::new(0.0, 0.0, 10.0),
+        4.0,
+        Pixel { r: 255, g: 255, b: 0 }
+    ));
     let camera = Camera::new();
 
     let view_port = gen_view_port(camera);
@@ -29,7 +36,7 @@ fn main() {
             for j in 0..H {
                 let ray = &view_port[i as usize][j as usize];
                 match shape.intersect(&ray) {
-                    Some(p) => image.set_pixel(i, j, color(&ray, shape.norm(&p))),
+                    Some(point) => image.set_pixel(i, j, color(shape.color, &ray, point, shape.norm(&point), &lights)),
                     None => {},
                 }
             }
@@ -39,14 +46,30 @@ fn main() {
     let _ = image.save("sphere.bmp");
 }
 
-fn color(ray: &Ray, normal: Vec3) -> Pixel {
+fn color(base: Pixel, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Vec3>) -> Pixel {
 
-    let f = (ray.direction.dot(&normal) / (ray.direction.length() * normal.length())).abs();
+    let ambient = 0.15;
+    let direct = 0.5;
+
+
+    let f1 = (ray.direction.dot(&normal) / (ray.direction.length() * normal.length())).abs();
+
+    let mut f2 = 0.0;
+    for light in lights {
+        let v2 = point.sub(&light);
+        let mut f = -(v2.dot(&normal) / (v2.length() * normal.length()));
+        f = if f > 0.0 { f } else { 0.0 };
+        f2 += f;
+    }
+
+    let mut f = f1 * ambient + f2 * direct;;
+
+    f = if f > 1.0 { 1.0 } else { f };
 
     Pixel {
-        r: (255.0 * f) as u8,
-        g: (255.0 * f) as u8,
-        b: (255.0 * f) as u8
+        r: (base.r as f32 * f) as u8,
+        g: (base.g as f32 * f) as u8,
+        b: (base.b as f32 * f) as u8
     }
 }
 
