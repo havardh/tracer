@@ -7,9 +7,11 @@ use bmp::*;
 use sphere::Sphere;
 use vec::Vec3;
 use camera::Camera;
+use color::Color;
 use ray::Ray;
 
 pub mod camera;
+pub mod color;
 pub mod ray;
 pub mod sphere;
 pub mod vec;
@@ -24,7 +26,7 @@ fn main() {
     let shapes = vec!(Sphere::new(
         Vec3::new(0.0, 0.0, 10.0),
         4.0,
-        Pixel { r: 255, g: 255, b: 0 }
+        Color::new(1.0, 1.0, 0.0)
     ));
     let camera = Camera::new();
 
@@ -46,7 +48,7 @@ fn main() {
     let _ = image.save("sphere.bmp");
 }
 
-fn color(base: Pixel, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Vec3>) -> Pixel {
+fn color(base: Color, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Vec3>) -> Pixel {
 
     let ambient = 0.15;
     let direct = 0.5;
@@ -67,11 +69,13 @@ fn color(base: Pixel, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Vec3>) 
     f = if f > 1.0 { 1.0 } else { f };
 
     Pixel {
-        r: (base.r as f32 * f) as u8,
-        g: (base.g as f32 * f) as u8,
-        b: (base.b as f32 * f) as u8
+        r: (255.0 * base.red as f32 * f) as u8,
+        g: (255.0 * base.green as f32 * f) as u8,
+        b: (255.0 * base.blue as f32 * f) as u8
     }
 }
+
+
 
 fn gen_view_port(camera: Camera) -> Vec<Vec<Ray>> {
     let half_width = (W / 2) as f32;
