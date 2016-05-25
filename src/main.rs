@@ -8,10 +8,12 @@ use sphere::Sphere;
 use vec::Vec3;
 use camera::Camera;
 use color::Color;
+use light::Light;
 use ray::Ray;
 
 pub mod camera;
 pub mod color;
+pub mod light;
 pub mod ray;
 pub mod sphere;
 pub mod vec;
@@ -19,8 +21,9 @@ pub mod vec;
 fn main() {
 
     let lights = vec!(
-        Vec3::new(3.0, -3.0, 5.0),
-        Vec3::new(-3.0, -3.0, 1.0)
+        Light::new(Vec3::new(3.0, -3.0, 1.0), Color::new(0.0, 1.0, 1.0)),
+        Light::new(Vec3::new(-3.0, -3.0, 1.0), Color::new(1.0, 0.0, 1.0)),
+        Light::new(Vec3::new(0.0, -10.0, 1.0), Color::new(1.0, 1.0, 0.0)),
     );
 
     let shapes = vec!(Sphere::new(
@@ -48,30 +51,27 @@ fn main() {
     let _ = image.save("sphere.bmp");
 }
 
-fn color(base: Color, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Vec3>) -> Pixel {
+fn color(base: Color, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Light>) -> Pixel {
 
     let ambient = 0.15;
     let direct = 0.5;
 
-
     let f1 = (ray.direction.dot(&normal) / (ray.direction.length() * normal.length())).abs();
 
-    let mut f2 = 0.0;
+    let mut f2 = Color::new(0.0, 0.0, 0.0);
     for light in lights {
-        let v2 = point.sub(&light);
+        let v2 = point.sub(&light.origin);
         let mut f = -(v2.dot(&normal) / (v2.length() * normal.length()));
         f = if f > 0.0 { f } else { 0.0 };
-        f2 += f;
+        f2 += light.color * f;
     }
 
-    let mut f = f1 * ambient + f2 * direct;;
-
-    f = if f > 1.0 { 1.0 } else { f };
+    let f = f1 * ambient + f2 * direct;
 
     Pixel {
-        r: (255.0 * base.red as f32 * f) as u8,
-        g: (255.0 * base.green as f32 * f) as u8,
-        b: (255.0 * base.blue as f32 * f) as u8
+        r: (255.0 * base.red as f32 * f.red) as u8,
+        g: (255.0 * base.green as f32 * f.green) as u8,
+        b: (255.0 * base.blue as f32 * f.blue) as u8
     }
 }
 
