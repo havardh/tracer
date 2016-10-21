@@ -1,10 +1,13 @@
 extern crate bmp;
+extern crate rand;
 
-const W : u32 = 1024;
-const H : u32 = 1024;
+const W : u32 = 512;
+const H : u32 = 512;
+
 
 use bmp::*;
 use sphere::Sphere;
+use scene::Scene;
 use vec::Vec3;
 use camera::Camera;
 use color::Color;
@@ -15,63 +18,75 @@ pub mod camera;
 pub mod color;
 pub mod light;
 pub mod ray;
+pub mod scene;
 pub mod sphere;
 pub mod vec;
 
 fn main() {
 
     let lights = vec!(
-        Light::new(Vec3::new(3.0, -3.0, 1.0), Color::new(0.0, 1.0, 1.0)),
-        Light::new(Vec3::new(-3.0, -3.0, 1.0), Color::new(1.0, 0.0, 1.0)),
-        Light::new(Vec3::new(0.0, -10.0, 1.0), Color::new(1.0, 1.0, 0.0)),
+        Light::new(Vec3::new(3.0, -3.0, 1.0), Color::new(1.0, 1.0, 1.0)),
+        Light::new(Vec3::new(-3.0, -3.0, 1.0), Color::new(1.0, 1.0, 1.0)),
+        Light::new(Vec3::new(0.0, -10.0, 1.0), Color::new(1.0, 1.0, 1.0)),
     );
 
-    let shapes = vec!(Sphere::new(
-        Vec3::new(0.0, 0.0, 10.0),
-        4.0,
-        Color::new(1.0, 1.0, 0.0)
+    let scene = Scene::new(vec!(
+        Sphere::new(Vec3::new(0.0, 0.0, 10.0), 2.0, Color::new(1.0, 1.0, 1.0)),
+        Sphere::new(Vec3::new(0.0, -4.0, 10.0), 2.0, Color::new(1.0, 1.0, 1.0)),
     ));
     let camera = Camera::new();
 
     let view_port = gen_view_port(camera);
 
     let mut image = Image::new(W, H);
-    for shape in shapes {
-        for i in 0..W {
-            for j in 0..H {
-                let ray = &view_port[i as usize][j as usize];
-                match shape.intersect(&ray) {
-                    Some(point) => image.set_pixel(i, j, color(shape.color, &ray, point, shape.norm(&point), &lights)),
-                    None => {},
-                }
-            }
+
+    let (w_from, w_to) = (252, 253); //(0, W);
+    let (h_from, h_to) = (300, 301); //(0, H);
+
+
+    for i in w_from..w_to {
+        for j in h_from..h_to {
+            let ray = view_port[i as usize][j as usize];
+            let c = color(ray, &scene, &lights, 10);
+            image.set_pixel(i, j, c.into());
         }
     }
-
     let _ = image.save("sphere.bmp");
 }
 
-fn color(base: Color, ray: &Ray, point: Vec3, normal: Vec3, lights: &Vec<Light>) -> Pixel {
-
-    let ambient = 0.15;
-    let direct = 0.5;
-
-    let f1 = (ray.direction.dot(&normal) / (ray.direction.length() * normal.length())).abs();
-
-    let mut f2 = Color::new(0.0, 0.0, 0.0);
-    for light in lights {
-        let v2 = point.sub(&light.origin);
-        let mut f = -(v2.dot(&normal) / (v2.length() * normal.length()));
-        f = if f > 0.0 { f } else { 0.0 };
-        f2 += light.color * f;
+fn color(ray: Ray, scene: &Scene, lights: &Vec<Light>, n: i32) -> Color {
+    if n < 0 {
+        return Color::black();
     }
 
-    let f = f1 * ambient + f2 * direct;
 
-    Pixel {
-        r: (255.0 * base.red as f32 * f.red) as u8,
-        g: (255.0 * base.green as f32 * f.green) as u8,
-        b: (255.0 * base.blue as f32 * f.blue) as u8
+    match scene.intersect(ray) {
+        Some((shape, point)) => {
+            println!("{:?}", point);
+            let base = shape.color;
+            let normal = shape.norm(point);
+
+            let ambient = 0.0;
+            let direct = 0.05;
+            let reflection = 1.0;
+
+            let f1 = (ray.direction.dot(normal) / (ray.direction.length() * normal.length())).abs();
+
+            let mut f2 = Color::new(0.0, 0.0, 0.0);
+            for light in lights {
+                let v2 = point.sub(light.origin);
+                let mut f = -(v2.dot(normal) / (v2.length() * normal.length()));
+                f = if f > 0.0 { f } else { 0.0 };
+                f2 += light.color * f;
+            }
+
+            let f3 = color(shape.scatter(point), scene, lights, n-1);
+
+            let f = f1 * ambient + f2 * direct + f3 * reflection;
+
+            base * f
+        },
+        None => Color::black()
     }
 }
 
@@ -90,9 +105,9 @@ fn gen_view_port(camera: Camera) -> Vec<Vec<Ray>> {
             let sx = (i as f32 - half_width) / half_width;
             let sy = (j as f32 - half_height) / half_height;
 
-            let p = m.add(&x.multiply(sx).add(&y.multiply(sy)));
+            let p = m.add(x.multiply(sx).add(y.multiply(sy)));
 
-            let t = p.sub(&e);
+            let t = p.sub(e);
             let mut d = t;
             d.norm();
 
@@ -114,8 +129,8 @@ fn calculate_vectors(camera: Camera) -> (Vec3, Vec3, Vec3, Vec3) {
     u.norm();
     v.norm();
 
-    let mut a = v.cross(&u);
-    let mut b = a.cross(&v);
+    let mut a = v.cross(u);
+    let mut b = a.cross(v);
 
     a.norm();
     b.norm();
@@ -123,7 +138,7 @@ fn calculate_vectors(camera: Camera) -> (Vec3, Vec3, Vec3, Vec3) {
     let e = camera.position;
     let mut x = a.multiply(c * (delta / 2.0).tan());
     let mut y = b.multiply(c * (phi / 2.0).tan());
-    let mut m = e.add(&v.multiply(c));
+    let mut m = e.add(v.multiply(c));
 
     x.norm();
     y.norm();

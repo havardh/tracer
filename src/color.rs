@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Mul};
 
+use bmp::Pixel;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
     pub red: f32,
@@ -17,6 +19,20 @@ impl Color {
             red: limit(red),
             green: limit(green),
             blue: limit(blue)
+        }
+    }
+
+    pub fn black() -> Color {
+        Color::new(0.0, 0.0, 0.0)
+    }
+}
+
+impl From<Color> for Pixel {
+    fn from(color: Color) -> Pixel {
+        Pixel {
+            r: (255.0 * color.red) as u8,
+            g: (255.0 * color.green) as u8,
+            b: (255.0 * color.blue) as u8
         }
     }
 }
@@ -61,6 +77,18 @@ impl Mul<f32> for Color {
             self.red * other,
             self.green * other,
             self.blue * other
+        )
+    }
+}
+
+impl Mul<Color> for Color {
+    type Output = Color;
+
+    fn mul(self, other: Color) -> Color {
+        Color::new(
+            self.red * other.red,
+            self.green * other.green,
+            self.blue * other.blue
         )
     }
 }

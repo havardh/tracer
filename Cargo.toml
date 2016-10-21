@@ -5,3 +5,4 @@ authors = ["Håvard Wormdal Høiby <havardwhoiby@gmail.com>"]
 
 [dependencies]
 bmp = "*"
+rand = "0.3.11"

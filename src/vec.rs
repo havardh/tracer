@@ -1,3 +1,5 @@
+use std::f32::INFINITY;
+
 #[derive(Debug)]
 #[derive(Clone, Copy)]
 pub struct Vec3 {
@@ -14,19 +16,23 @@ impl Vec3 {
         }
     }
 
+    pub fn infinity() -> Vec3 {
+        Vec3::new(-INFINITY, -INFINITY, -INFINITY)
+    }
+
     pub fn length(&self) -> f32 {
         (self.x*self.x + self.y*self.y + self.z*self.z).sqrt()
     }
 
-    pub fn add(&self, other: &Vec3) -> Vec3 {
+    pub fn add(&self, other: Vec3) -> Vec3 {
         Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 
-    pub fn sub(&self, other: &Vec3) -> Vec3 {
+    pub fn sub(&self, other: Vec3) -> Vec3 {
         Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 
-    pub fn dot(&self, other: &Vec3) -> f32 {
+    pub fn dot(&self, other: Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -34,7 +40,11 @@ impl Vec3 {
         Vec3::new(self.x * f, self.y * f, self.z * f)
     }
 
-    pub fn cross(&self, o: &Vec3) -> Vec3 {
+    pub fn divide(&self, f: f32) -> Vec3 {
+        Vec3::new(self.x / f, self.y / f, self.z / f)
+    }
+
+    pub fn cross(&self, o: Vec3) -> Vec3 {
         Vec3::new(
             self.y * o.z - self.z * o.y,
             -(self.x * o.z - self.z * o.x),
@@ -42,7 +52,7 @@ impl Vec3 {
         )
     }
 
-    pub fn norm(&mut self) {
+    pub fn norm(&mut self) -> Vec3 {
         let len = self.length();
 
         if len != 0.0 {
@@ -50,5 +60,7 @@ impl Vec3 {
             self.y /= len;
             self.z /= len;
         }
+
+        *self
     }
 }
